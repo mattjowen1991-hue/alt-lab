@@ -83,56 +83,61 @@ function renderProjects() {
         </div>
       `;
 
-      // Card tap: toggle highlight only — never navigates
-      // Navigation is handled exclusively by the View Project button below
-      let touchStartY = 0;
-      let touchStartX = 0;
-      let touchMoved  = false;
-      card.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-        touchMoved  = false;
-      }, { passive: true });
-      card.addEventListener('touchmove', (e) => {
-        const dy = Math.abs(e.touches[0].clientY - touchStartY);
-        const dx = Math.abs(e.touches[0].clientX - touchStartX);
-        if (dy > 8 || dx > 8) touchMoved = true;
-      }, { passive: true });
-      card.addEventListener('touchend', (e) => {
-        if (touchMoved) return;
-        // Don't let the <a> tag navigate — card tap only toggles highlight
-        e.preventDefault();
-        const isHighlighted = card.classList.contains('touched');
-        if (isHighlighted) {
-          card.classList.remove('touched'); // second tap — unhighlight
-        } else {
-          document.querySelectorAll('.project-card.touched').forEach(c => c.classList.remove('touched'));
-          card.classList.add('touched');    // first tap — highlight
-        }
-      });
-
-      // View project button — opens the link (works highlighted or not)
-      const viewBtn = card.querySelector('.view-btn-inner');
-      viewBtn.style.pointerEvents = 'auto';
-      viewBtn.addEventListener('touchend', (e) => {
-        if (touchMoved) return;
-        e.preventDefault();
-        e.stopPropagation(); // stop the card's touchend from also firing
-        window.open(card.href, '_blank');
-      });
-
-      // Desktop: clicking the card toggles highlight, button navigates
-      card.addEventListener('click', (e) => {
-        // If click came from the view button, let it through
-        if (e.target.closest('.view-btn-inner')) return;
-        e.preventDefault();
-        const isHighlighted = card.classList.contains('touched');
-        if (isHighlighted) {
+      // Shared toggle function
+      function toggleCard() {
+        if (card.classList.contains('touched')) {
           card.classList.remove('touched');
         } else {
           document.querySelectorAll('.project-card.touched').forEach(c => c.classList.remove('touched'));
           card.classList.add('touched');
         }
+      }
+
+      // Track touch movement to distinguish taps from scrolls
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let touchMoved  = false;
+      let isTouchDevice = false;
+
+      card.addEventListener('touchstart', (e) => {
+        isTouchDevice = true;
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        touchMoved  = false;
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+        const dx = Math.abs(e.touches[0].clientX - touchStartX);
+        if (dy > 8 || dx > 8) touchMoved = true;
+      }, { passive: true });
+
+      card.addEventListener('touchend', (e) => {
+        if (touchMoved) return;
+        e.preventDefault(); // prevents the click event firing after touchend
+        toggleCard();
+      });
+
+      // Desktop only — click handler (skipped on touch devices since touchend handles it)
+      card.addEventListener('click', (e) => {
+        if (isTouchDevice) return; // touch already handled via touchend
+        if (e.target.closest('.card-view-btn')) return; // let button click through
+        e.preventDefault();
+        toggleCard();
+      });
+
+      // View project button — always navigates, both touch and desktop
+      const viewBtn = card.querySelector('.card-view-btn');
+      viewBtn.style.pointerEvents = 'auto';
+      viewBtn.addEventListener('touchend', (e) => {
+        if (touchMoved) return;
+        e.stopPropagation();
+        e.preventDefault();
+        window.open(card.href, '_blank');
+      });
+      viewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.open(card.href, '_blank');
       });
 
       grid.appendChild(card);
