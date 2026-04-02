@@ -83,22 +83,52 @@ function renderProjects() {
         </div>
       `;
 
-      // Touch: tap once to highlight, tap again to navigate
+      // Card tap: toggle highlight only — never navigates
+      // Navigation is handled exclusively by the View Project button below
       let touchStartY = 0;
+      let touchStartX = 0;
       let touchMoved  = false;
       card.addEventListener('touchstart', (e) => {
         touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
         touchMoved  = false;
       }, { passive: true });
       card.addEventListener('touchmove', (e) => {
-        if (Math.abs(e.touches[0].clientY - touchStartY) > 8) touchMoved = true;
+        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+        const dx = Math.abs(e.touches[0].clientX - touchStartX);
+        if (dy > 8 || dx > 8) touchMoved = true;
       }, { passive: true });
       card.addEventListener('touchend', (e) => {
         if (touchMoved) return;
+        // Don't let the <a> tag navigate — card tap only toggles highlight
         e.preventDefault();
         const isHighlighted = card.classList.contains('touched');
         if (isHighlighted) {
-          window.open(card.href, '_blank');
+          card.classList.remove('touched'); // second tap — unhighlight
+        } else {
+          document.querySelectorAll('.project-card.touched').forEach(c => c.classList.remove('touched'));
+          card.classList.add('touched');    // first tap — highlight
+        }
+      });
+
+      // View project button — opens the link (works highlighted or not)
+      const viewBtn = card.querySelector('.view-btn-inner');
+      viewBtn.style.pointerEvents = 'auto';
+      viewBtn.addEventListener('touchend', (e) => {
+        if (touchMoved) return;
+        e.preventDefault();
+        e.stopPropagation(); // stop the card's touchend from also firing
+        window.open(card.href, '_blank');
+      });
+
+      // Desktop: clicking the card toggles highlight, button navigates
+      card.addEventListener('click', (e) => {
+        // If click came from the view button, let it through
+        if (e.target.closest('.view-btn-inner')) return;
+        e.preventDefault();
+        const isHighlighted = card.classList.contains('touched');
+        if (isHighlighted) {
+          card.classList.remove('touched');
         } else {
           document.querySelectorAll('.project-card.touched').forEach(c => c.classList.remove('touched'));
           card.classList.add('touched');

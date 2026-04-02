@@ -661,6 +661,8 @@
   .card-view-btn {
     margin-top: 1.4rem;
     overflow: hidden;
+    position: relative;
+    z-index: 2;
   }
 
   .view-btn-inner {
@@ -675,7 +677,7 @@
     color: var(--muted);
     background: transparent;
     transition: background 0.25s, color 0.25s, border-color 0.25s;
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   /* When card is black (hover/touched), button text goes muted so outline is visible */
